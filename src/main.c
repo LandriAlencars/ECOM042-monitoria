@@ -7,12 +7,36 @@
  * @date 26/08/2026
  *******************************************************************/
 
+#include <errno.h>
+
 #include <zephyr/kernel.h>
+#include <zephyr/sys/util.h>
+
+#include "command.h"
+#include "commands.h"
+
+static const struct command *const command_table[] = {
+	&cmd_led_on,
+	&cmd_led_off,
+	&cmd_blink,
+	&cmd_status,
+};
 
 int main(void)
 {
-	/* TODO (Atividade-02): criar command.{h, c} e commands.{h, c}
-	 * (Command Pattern), montar a tabela de comandos e despachar.
-	 */
+	struct app_state dev = {0};
+	const char *requests[] = {"led_on", "status", "blink", "blink", "status", "reboot"};
+
+	for (size_t i = 0; i < ARRAY_SIZE(requests); i++) {
+		int ret = command_dispatch(command_table, ARRAY_SIZE(command_table), requests[i],
+					   &dev);
+
+		if (ret == -ENOENT) {
+			printk("error: unknown command '%s'\n", requests[i]);
+		} else if (ret < 0) {
+			printk("error: command '%s' failed (%d)\n", requests[i], ret);
+		}
+	}
+
 	return 0;
 }
